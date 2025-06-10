@@ -1,20 +1,27 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { AuthProvider } from '@/lib/auth-context';
-import { Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const isAuth = false;
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoadingUser } = useAuth();
+  // const [isLoading, setIsLoading] = useState(true);
+  const segments = useSegments();
 
   useEffect(() => {
-    setIsLoading(false);
-    if (!isAuth && !isLoading) {
+    // setIsLoading(false);
+    const inAuthGroup = segments[0] === 'auth';
+    if (!user && !inAuthGroup && !isLoadingUser) {
       // Redirect to login screen
       router.replace('/auth');
+    } else if (user && inAuthGroup && !isLoadingUser) {
+      // Redirect away from login screen
+      router.replace('/');
     }
-  }, [isLoading, isAuth]);
+  }, [isLoadingUser, user, segments]);
 
   return <>{children}</>;
 }
@@ -22,11 +29,15 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RouteGuard>
-        <Stack>
-          <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
-        </Stack>
-      </RouteGuard>
+      <PaperProvider>
+        <SafeAreaProvider>
+          <RouteGuard>
+            <Stack>
+              <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+            </Stack>
+          </RouteGuard>
+        </SafeAreaProvider>
+      </PaperProvider>
     </AuthProvider>
   );
 }
