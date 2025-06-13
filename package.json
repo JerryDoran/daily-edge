@@ -1,5 +1,5 @@
 {
-  "name": "edge-daily",
+  "name": "daily-edge",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {

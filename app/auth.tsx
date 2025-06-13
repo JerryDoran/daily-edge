@@ -1,7 +1,14 @@
 import { useAuth } from '@/lib/auth-context';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 
 export default function AuthScreen() {
@@ -55,6 +62,10 @@ export default function AuthScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
+        <Image
+          source={require('@/assets/images/habit-4.png')}
+          style={styles.illustration}
+        />
         <Text style={styles.title} variant='headlineMedium'>
           {isSignUp ? 'Create Account' : 'Welcome Back'}
         </Text>
@@ -82,15 +93,13 @@ export default function AuthScreen() {
         <Button mode='contained' style={styles.button} onPress={handleAuth}>
           {isSignUp ? 'Create Account' : 'Sign In'}
         </Button>
-        <Button
-          mode='text'
-          onPress={handleSwitchMode}
-          style={styles.switchModeButton}
-        >
-          {isSignUp
-            ? 'Already have a account? Sign In'
-            : "Don't have a account? Sign Up"}
-        </Button>
+        <TouchableOpacity onPress={handleSwitchMode}>
+          <Text style={styles.switchModeButton}>
+            {isSignUp
+              ? 'Already have a account? Sign In'
+              : "Don't have a account? Sign Up"}
+          </Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -98,7 +107,7 @@ export default function AuthScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: .75,
     backgroundColor: '#f5f5f5',
   },
   content: {
@@ -117,8 +126,16 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 8,
+    backgroundColor: '#704229',
   },
   switchModeButton: {
     marginTop: 16,
+    color: '#704229',
+    textAlign: 'center',
+  },
+  illustration: {
+    width: 340,
+    height: 150,
+    resizeMode: 'contain',
   },
 });
