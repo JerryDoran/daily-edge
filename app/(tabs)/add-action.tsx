@@ -1,6 +1,16 @@
+import { ACTIONS_COLLECTION_ID, DATABASE_ID, db } from '@/lib/appwrite';
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { Button, SegmentedButtons, TextInput } from 'react-native-paper';
+import { ID } from 'react-native-appwrite';
+import {
+  Button,
+  SegmentedButtons,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
 
 const FREQUENCIES = ['daily', 'weekly', 'monthly'];
 type Frequency = (typeof FREQUENCIES)[number];
@@ -9,6 +19,44 @@ export default function AddActionScreen() {
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [frequency, setFrequency] = useState<Frequency>('daily');
+  const [error, setError] = useState<string>('');
+  const { user } = useAuth();
+  const router = useRouter();
+  const theme = useTheme();
+
+  async function handleSubmit() {
+    if (!user) {
+      return;
+    }
+    try {
+      const action = await db.createDocument(
+        DATABASE_ID,
+        ACTIONS_COLLECTION_ID,
+        ID.unique(),
+        {
+          user_id: user.$id,
+          title,
+          description,
+          frequency,
+          streak_count: 0,
+          last_completed: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        }
+      );
+      console.log('Action created:', action);
+      // Redirect to action detail page
+      setTitle('');
+      setDescription('');
+      setFrequency('daily');
+      router.back();
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+        return;
+      }
+      setError('An error occurred creating your slight edge action');
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -28,6 +76,7 @@ export default function AddActionScreen() {
         onChangeText={setDescription}
         label='Description'
         mode='outlined'
+        multiline
       />
       <View style={styles.frequencyContainer}>
         <SegmentedButtons
@@ -36,13 +85,32 @@ export default function AddActionScreen() {
           buttons={FREQUENCIES.map((freq) => ({
             value: freq,
             label: freq.charAt(0).toUpperCase() + freq.slice(1),
+            style: {
+              backgroundColor: frequency === freq ? '#e4d2c7' : '#f5f5f5',
+            },
           }))}
-          theme={{ colors: { primary: 'green' } }}
+          style={styles.segmentedButtons}
         />
       </View>
-      <Button mode='contained' style={styles.addButton}>
+      <Button
+        mode='contained'
+        disabled={!title || !description}
+        style={styles.addButton}
+        onPress={handleSubmit}
+      >
         Add Action
       </Button>
+      {error && (
+        <Text
+          style={{
+            color: theme.colors.error,
+            marginTop: 12,
+            textAlign: 'center',
+          }}
+        >
+          {error}
+        </Text>
+      )}
     </View>
   );
 }

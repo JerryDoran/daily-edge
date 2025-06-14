@@ -11,3 +11,8 @@ export const db = new Databases(client);
 export const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 export const ACTIONS_COLLECTION_ID =
   process.env.EXPO_PUBLIC_ACTIONS_COLLECTION_ID!;
+
+export type RealtimeResponse = {
+  events: string[];
+  payload: any;
+};
