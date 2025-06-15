@@ -8,7 +8,7 @@ import {
   RealtimeResponse,
 } from '@/lib/appwrite';
 import { useAuth } from '@/lib/auth-context';
-import { Action } from '@/types/database.types';
+import { Action, ActionCompletion } from '@/types/database.types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
@@ -21,6 +21,7 @@ import { Button, Surface, Text } from 'react-native-paper';
 export default function HomeScreen() {
   const { signOut, user } = useAuth();
   const [actions, setActions] = useState<Action[]>([]);
+  const [completedActions, setCompletedActions] = useState<string[]>([]);
 
   const swipeableRefs = useRef<{ [key: string]: SwipeableMethods | null }>({});
 
@@ -38,14 +39,35 @@ export default function HomeScreen() {
     }
   }
 
+  async function fetchTodayCompletedActions() {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const response = await db.listDocuments(
+        DATABASE_ID,
+        ACTION_COMPLETIONS_COLLECTION_ID,
+        [
+          Query.equal('user_id', user?.$id ?? ''),
+          Query.greaterThanEqual('completed_at', today.toISOString()),
+        ]
+      );
+      const completedActions = response.documents as ActionCompletion[];
+      // returns an array of action ids
+      setCompletedActions(completedActions.map((action) => action.action_id));
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     if (!user) {
       return;
     }
-    const channel = `databases.${DATABASE_ID}.collections.${ACTIONS_COLLECTION_ID}.documents`;
+    const actionsChannel = `databases.${DATABASE_ID}.collections.${ACTIONS_COLLECTION_ID}.documents`;
 
     const actionSubscription = client.subscribe(
-      channel,
+      actionsChannel,
       (response: RealtimeResponse) => {
         if (
           response.events.includes(
@@ -69,10 +91,27 @@ export default function HomeScreen() {
       }
     );
 
+    const completedActionsChannel = `databases.${DATABASE_ID}.collections.${ACTION_COMPLETIONS_COLLECTION_ID}.documents`;
+
+    const completedActionsSubscription = client.subscribe(
+      completedActionsChannel,
+      (response: RealtimeResponse) => {
+        if (
+          response.events.includes(
+            'databases.*.collections.*.documents.*.create'
+          )
+        ) {
+          fetchTodayCompletedActions();
+        }
+      }
+    );
+
     fetchActions();
+    fetchTodayCompletedActions();
 
     return () => {
       actionSubscription();
+      completedActionsSubscription();
     };
   }, [user]);
 
@@ -85,7 +124,7 @@ export default function HomeScreen() {
   }
 
   async function handleCompleteAction(id: string) {
-    if (!user) return;
+    if (!user || completedActions.includes(id)) return;
     try {
       const currentDate = new Date().toISOString();
       await db.createDocument(
@@ -111,14 +150,21 @@ export default function HomeScreen() {
     }
   }
 
-  function renderRightActions() {
+  const isActionCompleted = (actionId: string) =>
+    completedActions?.includes(actionId);
+
+  function renderRightActions(actionId: string) {
     return (
       <View style={styles.swipeActionRight}>
-        <MaterialCommunityIcons
-          name='check-circle-outline'
-          size={32}
-          color='white'
-        />
+        {isActionCompleted(actionId) ? (
+          <Text style={styles.completedText}>Completed</Text>
+        ) : (
+          <MaterialCommunityIcons
+            name='check-circle-outline'
+            size={32}
+            color='white'
+          />
+        )}
       </View>
     );
   }
@@ -164,7 +210,7 @@ export default function HomeScreen() {
                 swipeableRefs.current[action.$id] = ref;
               }}
               renderLeftActions={renderLeftActions}
-              renderRightActions={renderRightActions}
+              renderRightActions={() => renderRightActions(action.$id)}
               onSwipeableOpen={(direction) => {
                 if (direction === 'right') {
                   handleDeleteAction(action.$id);
@@ -174,7 +220,13 @@ export default function HomeScreen() {
                 swipeableRefs.current[action.$id]?.close();
               }}
             >
-              <Surface style={styles.card} elevation={0}>
+              <Surface
+                style={[
+                  styles.card,
+                  isActionCompleted(action.$id) && styles.cardCompleted,
+                ]}
+                elevation={0}
+              >
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>{action.title}</Text>
                   <Text style={styles.cardDescription}>
@@ -250,6 +302,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  cardCompleted: {
+    // opacity: 0.6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#704229',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  completedText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   cardContent: {
     padding: 14,

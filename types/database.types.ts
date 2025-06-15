@@ -9,3 +9,9 @@ export type Action = Models.Document & {
   last_completed: string;
   created_at: string;
 };
+
+export type ActionCompletion = Models.Document & {
+  action_id: string;
+  user_id: string;
+  completed_at: string;
+};
