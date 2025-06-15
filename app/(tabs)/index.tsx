@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
+  ACTION_COMPLETIONS_COLLECTION_ID,
   ACTIONS_COLLECTION_ID,
   client,
   DATABASE_ID,
@@ -11,7 +12,7 @@ import { Action } from '@/types/database.types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
-import { Query } from 'react-native-appwrite';
+import { ID, Query } from 'react-native-appwrite';
 import Swipeable, {
   SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -75,6 +76,41 @@ export default function HomeScreen() {
     };
   }, [user]);
 
+  async function handleDeleteAction(id: string) {
+    try {
+      await db.deleteDocument(DATABASE_ID, ACTIONS_COLLECTION_ID, id);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function handleCompleteAction(id: string) {
+    if (!user) return;
+    try {
+      const currentDate = new Date().toISOString();
+      await db.createDocument(
+        DATABASE_ID,
+        ACTION_COMPLETIONS_COLLECTION_ID,
+        ID.unique(),
+        {
+          action_id: id,
+          user_id: user.$id,
+          completed_at: currentDate,
+        }
+      );
+
+      const action = actions.find((action) => action.$id === id);
+      if (!action) return;
+
+      await db.updateDocument(DATABASE_ID, ACTIONS_COLLECTION_ID, action.$id, {
+        streak_count: action.streak_count + 1,
+        last_completed: currentDate,
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   function renderRightActions() {
     return (
       <View style={styles.swipeActionRight}>
@@ -102,7 +138,6 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {' '}
         <Image
           source={require('../../assets/images/habit-2.png')}
           style={styles.headerLogo}
@@ -130,6 +165,14 @@ export default function HomeScreen() {
               }}
               renderLeftActions={renderLeftActions}
               renderRightActions={renderRightActions}
+              onSwipeableOpen={(direction) => {
+                if (direction === 'right') {
+                  handleDeleteAction(action.$id);
+                } else if (direction === 'left') {
+                  handleCompleteAction(action.$id);
+                }
+                swipeableRefs.current[action.$id]?.close();
+              }}
             >
               <Surface style={styles.card} elevation={0}>
                 <View style={styles.cardContent}>
