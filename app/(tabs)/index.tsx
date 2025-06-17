@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   cardCompleted: {
     // opacity: 0.6,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     borderLeftColor: '#704229',
     borderTopLeftRadius: 12,
     borderBottomLeftRadius: 12,

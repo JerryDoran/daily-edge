@@ -1,14 +1,18 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import {
   ACTION_COMPLETIONS_COLLECTION_ID,
   ACTIONS_COLLECTION_ID,
+  client,
   DATABASE_ID,
   db,
+  RealtimeResponse,
 } from '@/lib/appwrite';
 import { useAuth } from '@/lib/auth-context';
 import { Action, ActionCompletion } from '@/types/database.types';
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Query } from 'react-native-appwrite';
+import { Card, Text } from 'react-native-paper';
 
 type StreakData = {
   streak: number;
@@ -26,7 +30,55 @@ export default function StreaksScreen() {
 
   useEffect(() => {
     if (!user) {
-      return;
+      const actionsChannel = `databases.${DATABASE_ID}.collections.${ACTIONS_COLLECTION_ID}.documents`;
+
+      const actionSubscription = client.subscribe(
+        actionsChannel,
+        (response: RealtimeResponse) => {
+          if (
+            response.events.includes(
+              'databases.*.collections.*.documents.*.create'
+            )
+          ) {
+            fetchActions();
+          } else if (
+            response.events.includes(
+              'databases.*.collections.*.documents.*.update'
+            )
+          ) {
+            fetchActions();
+          } else if (
+            response.events.includes(
+              'databases.*.collections.*.documents.*.delete'
+            )
+          ) {
+            fetchActions();
+          }
+        }
+      );
+
+      const completedActionsChannel = `databases.${DATABASE_ID}.collections.${ACTION_COMPLETIONS_COLLECTION_ID}.documents`;
+
+      const completedActionsSubscription = client.subscribe(
+        completedActionsChannel,
+        (response: RealtimeResponse) => {
+          if (
+            response.events.includes(
+              'databases.*.collections.*.documents.*.create'
+            )
+          ) {
+            fetchCompletedActions();
+          }
+        }
+      );
+
+      fetchActions();
+      fetchCompletedActions();
+
+      return () => {
+        actionSubscription();
+        completedActionsSubscription();
+      };
     }
     fetchActions();
     fetchCompletedActions();
@@ -80,7 +132,7 @@ export default function StreaksScreen() {
     // build streak data
     let streak = 0;
     let longestStreak = 0;
-    let total = actionCompletions?.length;
+    let total = actionCompletions.length;
 
     let lastDate: Date | null = null;
     let currentStreak = 0;
@@ -109,9 +161,184 @@ export default function StreaksScreen() {
     return { streak, longestStreak, total };
   }
 
+  const actionStreaks = actions.map((action) => {
+    const { streak, longestStreak, total } = getStreakData(action.$id);
+    return {
+      action,
+      streak,
+      longestStreak,
+      total,
+    };
+  });
+
+  const rankedActions = actionStreaks.sort(
+    (a, b) => a.longestStreak - b.longestStreak
+  );
+
+  const badgeStyles = [styles.badge1, styles.badge2, styles.badge3];
+
   return (
-    <View>
-      <Text>Action Streaks</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Action Streaks</Text>
+
+      {rankedActions.length > 0 && (
+        <View>
+          <Text style={styles.subtitle}>🥇 Top Streaks</Text>
+          {rankedActions.slice(0, 3).map((item, index) => (
+            <View key={index}>
+              <View style={[styles.rankingBadge, badgeStyles[index]]}>
+                <Text style={styles.rankingBadgeText}>{index + 1}.</Text>
+              </View>
+              <Text style={styles.rankingBadgeDescription}>
+                {item.action.title}
+              </Text>
+              <Text style={styles.rankingBadgeDescription}>
+                {item.longestStreak}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {actions.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateTitle}>
+            No ranked actions yet. Start ranking your actions to see them here
+          </Text>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
+          {rankedActions.map(
+            ({ action, streak, longestStreak, total }, index) => (
+              <Card
+                key={index}
+                style={[styles.card, index === 0 && styles.cardBest]}
+              >
+                <Card.Content>
+                  <Text variant='titleMedium' style={styles.cardTitle}>
+                    {action.title}
+                  </Text>
+                  <Text style={styles.cardDescription}>
+                    {action.description}
+                  </Text>
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statBadgeCurrent}>
+                      <Text style={styles.statBadgeText}>🔥 {streak}</Text>
+                      <Text style={styles.statLabel}>Current</Text>
+                    </View>
+                    <View style={styles.statBadgeGold}>
+                      <Text style={styles.statBadgeText}>
+                        🏆 {longestStreak}
+                      </Text>
+                      <Text style={styles.statLabel}>Longest</Text>
+                    </View>
+                    <View style={styles.statBadgeGreen}>
+                      <Text style={styles.statBadgeText}>✅ {total}</Text>
+                      <Text style={styles.statLabel}>Total</Text>
+                    </View>
+                  </View>
+                </Card.Content>
+              </Card>
+            )
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    padding: 14,
+  },
+  container: {
+    flex: 1,
+    padding: 14,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  card: {
+    marginBottom: 16,
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    // elevation: 3,
+    // shadowColor: '#000000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  cardBest: {
+    borderWidth: 2,
+    borderColor: '#704229',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateTitle: {
+    color: '#555555',
+  },
+  cardTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#704229',
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontSize: 13,
+    marginBottom: 10,
+    color: '#6c6c80',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  statBadgeCurrent: {
+    backgroundColor: '#f9ede7',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 60,
+  },
+  statBadgeGold: {
+    backgroundColor: '#fbf7ce',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 4,
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  statBadgeGreen: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 4,
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  statBadgeText: {
+    color: '#704229',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  statLabel: {
+    fontSize: 10,
+    marginLeft: 8,
+    color: '#704229',
+    fontWeight: '500',
+  },
+});
