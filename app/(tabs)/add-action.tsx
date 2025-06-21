@@ -75,12 +75,14 @@ export default function AddActionScreen() {
           style={styles.input}
           onChangeText={setTitle}
           placeholder='Title'
+          placeholderTextColor='#98897e'
         />
         <TextInput
           style={styles.input}
           onChangeText={setDescription}
           placeholder='Description'
           multiline
+          placeholderTextColor='#a89b91'
         />
         <View style={styles.frequencyContainer}>
           <SegmentedButtons
@@ -91,6 +93,10 @@ export default function AddActionScreen() {
               label: freq.charAt(0).toUpperCase() + freq.slice(1),
               style: {
                 backgroundColor: frequency === freq ? '#e4d2c7' : '#f5f5f5',
+                color: 'red',
+              },
+              labelStyle: {
+                color: '#704229',
               },
             }))}
             style={styles.segmentedButtons}
@@ -100,6 +106,7 @@ export default function AddActionScreen() {
           mode='contained'
           disabled={!title || !description}
           style={styles.addButton}
+          labelStyle={{ color: 'white' }}
           onPress={handleSubmit}
         >
           Add Action
@@ -138,6 +145,8 @@ const styles = StyleSheet.create({
     color: '#333333',
     padding: 12,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e4d2c7',
   },
   frequencyContainer: {
     marginBottom: 24,
@@ -147,6 +156,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#704229',
+    color: 'white',
     alignSelf: 'center',
     width: '50%',
   },
