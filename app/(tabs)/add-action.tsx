@@ -2,15 +2,10 @@ import { ACTIONS_COLLECTION_ID, DATABASE_ID, db } from '@/lib/appwrite';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, TextInput, View } from 'react-native';
 import { ID } from 'react-native-appwrite';
-import {
-  Button,
-  SegmentedButtons,
-  Text,
-  TextInput,
-  useTheme,
-} from 'react-native-paper';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Button, SegmentedButtons, Text, useTheme } from 'react-native-paper';
 
 const FREQUENCIES = ['daily', 'weekly', 'monthly'];
 type Frequency = (typeof FREQUENCIES)[number];
@@ -59,59 +54,69 @@ export default function AddActionScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require('../../assets/images/logo.png')}
-        style={styles.headerLogo}
-        resizeMode='contain'
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={setTitle}
-        label='Tile'
-        mode='outlined'
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={setDescription}
-        label='Description'
-        mode='outlined'
-        multiline
-      />
-      <View style={styles.frequencyContainer}>
-        <SegmentedButtons
-          value={frequency}
-          onValueChange={(value) => setFrequency(value)}
-          buttons={FREQUENCIES.map((freq) => ({
-            value: freq,
-            label: freq.charAt(0).toUpperCase() + freq.slice(1),
-            style: {
-              backgroundColor: frequency === freq ? '#e4d2c7' : '#f5f5f5',
-            },
-          }))}
-          style={styles.segmentedButtons}
+    <KeyboardAwareScrollView
+      style={{
+        flex: 1,
+      }}
+      contentContainerStyle={{
+        flexGrow: 1,
+      }}
+      enableOnAndroid={true}
+      enableAutomaticScroll={true}
+      extraScrollHeight={10}
+    >
+      <View style={styles.container}>
+        <Image
+          source={require('../../assets/images/logo.png')}
+          style={styles.headerLogo}
+          resizeMode='contain'
         />
-      </View>
-      <Button
-        mode='contained'
-        disabled={!title || !description}
-        style={styles.addButton}
-        onPress={handleSubmit}
-      >
-        Add Action
-      </Button>
-      {error && (
-        <Text
-          style={{
-            color: theme.colors.error,
-            marginTop: 12,
-            textAlign: 'center',
-          }}
+        <TextInput
+          style={styles.input}
+          onChangeText={setTitle}
+          placeholder='Title'
+        />
+        <TextInput
+          style={styles.input}
+          onChangeText={setDescription}
+          placeholder='Description'
+          multiline
+        />
+        <View style={styles.frequencyContainer}>
+          <SegmentedButtons
+            value={frequency}
+            onValueChange={(value) => setFrequency(value)}
+            buttons={FREQUENCIES.map((freq) => ({
+              value: freq,
+              label: freq.charAt(0).toUpperCase() + freq.slice(1),
+              style: {
+                backgroundColor: frequency === freq ? '#e4d2c7' : '#f5f5f5',
+              },
+            }))}
+            style={styles.segmentedButtons}
+          />
+        </View>
+        <Button
+          mode='contained'
+          disabled={!title || !description}
+          style={styles.addButton}
+          onPress={handleSubmit}
         >
-          {error}
-        </Text>
-      )}
-    </View>
+          Add Action
+        </Button>
+        {error && (
+          <Text
+            style={{
+              color: theme.colors.error,
+              marginTop: 12,
+              textAlign: 'center',
+            }}
+          >
+            {error}
+          </Text>
+        )}
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -129,6 +134,10 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
+    backgroundColor: 'white',
+    color: '#333333',
+    padding: 12,
+    borderRadius: 8,
   },
   frequencyContainer: {
     marginBottom: 24,

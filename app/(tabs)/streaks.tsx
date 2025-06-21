@@ -180,8 +180,6 @@ export default function StreaksScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Action Streaks</Text>
-
       {rankedActions.length > 0 && (
         <View style={styles.rankingContainer}>
           <Text style={styles.rankingTitle} variant='headlineSmall'>
@@ -257,11 +255,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
+
   card: {
     marginBottom: 16,
     borderRadius: 12,
