@@ -150,12 +150,13 @@ export default function StreaksScreen() {
           currentStreak = 1;
         }
       } else {
-        if (currentStreak > longestStreak) {
-          longestStreak = currentStreak;
-        }
-        streak = currentStreak;
-        lastDate = actionCompletionDate;
+        currentStreak = 1;
       }
+      if (currentStreak > longestStreak) {
+        longestStreak = currentStreak;
+      }
+      streak = currentStreak;
+      lastDate = actionCompletionDate;
     });
 
     return { streak, longestStreak, total };
@@ -172,7 +173,7 @@ export default function StreaksScreen() {
   });
 
   const rankedActions = actionStreaks.sort(
-    (a, b) => a.longestStreak - b.longestStreak
+    (a, b) => b.longestStreak - a.longestStreak
   );
 
   const badgeStyles = [styles.badge1, styles.badge2, styles.badge3];
@@ -182,19 +183,19 @@ export default function StreaksScreen() {
       <Text style={styles.title}>Action Streaks</Text>
 
       {rankedActions.length > 0 && (
-        <View>
-          <Text style={styles.subtitle}>🥇 Top Streaks</Text>
+        <View style={styles.rankingContainer}>
+          <Text style={styles.rankingTitle} variant='headlineSmall'>
+            🥇 Top Streaks
+          </Text>
           {rankedActions.slice(0, 3).map((item, index) => (
-            <View key={index}>
+            <View key={index} style={styles.rankingBadgeContainer}>
               <View style={[styles.rankingBadge, badgeStyles[index]]}>
-                <Text style={styles.rankingBadgeText}>{index + 1}.</Text>
+                <Text style={styles.rankingBadgeText}>{index + 1}</Text>
               </View>
               <Text style={styles.rankingBadgeDescription}>
                 {item.action.title}
               </Text>
-              <Text style={styles.rankingBadgeDescription}>
-                {item.longestStreak}
-              </Text>
+              <Text style={styles.rankingStreak}> {item.longestStreak}</Text>
             </View>
           ))}
         </View>
@@ -340,5 +341,65 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#704229',
     fontWeight: '500',
+  },
+  badge1: {
+    backgroundColor: '#ffb300',
+  },
+  badge2: {
+    backgroundColor: '#c0c0c0',
+  },
+  badge3: {
+    backgroundColor: '#cd7f32',
+  },
+  rankingContainer: {
+    marginBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  rankingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#704229',
+    letterSpacing: 1,
+  },
+  rankingBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 8,
+  },
+  rankingBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#e0e0e0',
+  },
+  rankingBadgeText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  rankingBadgeDescription: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '600',
+  },
+  rankingStreak: {
+    fontSize: 14,
+    color: '#704229',
+    fontWeight: 'bold',
   },
 });
